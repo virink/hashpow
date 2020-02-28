@@ -23,24 +23,21 @@ update:
 windows:
 	@for GOARCH in ${ARCHS}; do \
 		echo "Building for windows $${GOARCH} ..." ; \
-		mkdir -p ${TARGET}/${APPNAME}-windows-$${GOARCH} ; \
-		GOOS=windows GOARCH=$${GOARCH} GO111MODULE=on CGO_ENABLED=0 go build -ldflags=${LDFLAGS} -gcflags=${GCFLAGS} -asmflags=${ASMFLAGS} -o ${TARGET}/${APPNAME}-windows-$${GOARCH}/${APPNAME}.exe ; \
+		GOOS=windows GOARCH=$${GOARCH} GO111MODULE=on CGO_ENABLED=0 go build -ldflags=${LDFLAGS} -gcflags=${GCFLAGS} -asmflags=${ASMFLAGS} -o ${TARGET}/${APPNAME}-windows-$${GOARCH}.exe ; \
 	done; \
 	echo "Done."
 
 linux:
 	@for GOARCH in ${ARCHS}; do \
 		echo "Building for linux $${GOARCH} ..." ; \
-		mkdir -p ${TARGET}/${APPNAME}-linux-$${GOARCH} ; \
-		GOOS=linux GOARCH=$${GOARCH} GO111MODULE=on CGO_ENABLED=0 go build -ldflags=${LDFLAGS} -gcflags=${GCFLAGS} -asmflags=${ASMFLAGS} -o ${TARGET}/${APPNAME}-linux-$${GOARCH}/${APPNAME} ; \
+		GOOS=linux GOARCH=$${GOARCH} GO111MODULE=on CGO_ENABLED=0 go build -ldflags=${LDFLAGS} -gcflags=${GCFLAGS} -asmflags=${ASMFLAGS} -o ${TARGET}/${APPNAME}-linux-$${GOARCH} ; \
 	done; \
 	echo "Done."
 
 darwin:
 	@for GOARCH in ${ARCHS}; do \
 		echo "Building for darwin $${GOARCH} ..." ; \
-		mkdir -p ${TARGET}/${APPNAME}-darwin-$${GOARCH} ; \
-		GOOS=darwin GOARCH=$${GOARCH} GO111MODULE=on CGO_ENABLED=0 go build -ldflags=${LDFLAGS} -gcflags=${GCFLAGS} -asmflags=${ASMFLAGS} -o ${TARGET}/${APPNAME}-darwin-$${GOARCH}/${APPNAME} ; \
+		GOOS=darwin GOARCH=$${GOARCH} GO111MODULE=on CGO_ENABLED=0 go build -ldflags=${LDFLAGS} -gcflags=${GCFLAGS} -asmflags=${ASMFLAGS} -o ${TARGET}/${APPNAME}-darwin-$${GOARCH} ; \
 	done; \
 	echo "Done."
 
@@ -64,3 +61,12 @@ clean:
 	@rm -rf ${TARGET}/* ; \
 	go clean ./... ; \
 	echo "Done."
+
+package:
+	@cd build; \
+	sha256sum * > SHA256.txt; \
+	upx -9 *; \
+	sha256sum * > SHA256_Package.txt; \
+	tar -zcvf ../${APPNAME}.tar.gz ./
+	echo "Done."
+	

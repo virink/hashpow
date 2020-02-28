@@ -25,7 +25,7 @@ Usage of ./build/hashpow:
 
 ## Cli
 
-`./hashpow -c code [-p pos -h [md5,sha1] -pf prefix -sf suffix]`
+`./hashpow -c code -h [md5,sha1] [-p pos -pf prefix -sf suffix]`
 
 ## Server
 
@@ -40,10 +40,23 @@ Request
 ```
 /hashpow?c=code
 /hashpow?c=code&p=pos&h=hash&pf=prefix&sf=suffix
+/hashpow?c=aaaaaa&h=md5
 ```
 
 Response
 
 ```
-{"code":"aaaaaa","hash":"","msg":"success","pos":0,"prefix":"","result":"dsEfACYS","suffix":""}
+{
+      "code":0,
+      "msg":"success",
+      "data":{
+            "code":"aaaaaa",
+            "hash":"md5",
+            "msg":"success",
+            "pos":0,
+            "prefix":"",
+            "result":"dsEfACYS",
+            "suffix":""
+      }
+}
 ```
