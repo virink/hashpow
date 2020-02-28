@@ -19,16 +19,17 @@ import (
 )
 
 const (
-	Version = "0.1"
-	AppName = "Hashpow"
-	Desc    = "Just for Venom Team"
-	Author  = "Virink"
+	version = "0.1"
+	appName = "Hashpow"
+	desc    = "A tool for ctfer which make hash collision faster"
+	author  = "Virink"
 	letter  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
 var (
 	done                               chan struct{}
-	start, end, pos, port              int
+	err                                error
+	pos, port                          int
 	code, prefix, suffix, hash, result string
 	server                             bool
 	wg                                 sync.WaitGroup
@@ -52,6 +53,7 @@ func (r *randbo) Read(p []byte) (n int, err error) {
 		}
 	}
 }
+
 func newFrom(src rand.Source) io.Reader {
 	return &randbo{src}
 }
@@ -59,30 +61,28 @@ func newRandbo() io.Reader {
 	return newFrom(rand.NewSource(time.Now().UnixNano()))
 }
 
-func init() {
-	done = make(chan struct{})
-	result = ""
-}
-
-func vMD5(str []byte) string {
+func doMD5(str []byte) string {
 	h := md5.New()
-	h.Write(str)
+	_, err = h.Write(str)
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func vSha1(str []byte) string {
+func doSha1(str []byte) string {
 	h := sha1.New()
-	h.Write(str)
+	_, err = h.Write(str)
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func runFuckRandom(wg *sync.WaitGroup, code, prefix, suffix, hash string, pos, posend int) {
+func doRandom(wg *sync.WaitGroup, code, prefix, suffix, hash string, pos, posend int) {
 	defer wg.Done()
 	var _hash func(str []byte) string
 	if hash == "sha1" {
-		_hash = vSha1
+		_hash = doSha1
+	} else if hash == "md5" {
+		_hash = doMD5
 	} else {
-		_hash = vMD5
+		result = "Error hash type!"
+		return
 	}
 	var buffer bytes.Buffer
 	r := newRandbo()
@@ -93,7 +93,10 @@ func runFuckRandom(wg *sync.WaitGroup, code, prefix, suffix, hash string, pos, p
 		default:
 			buffer.Reset()
 			tmp := make([]byte, 8)
-			r.Read(tmp)
+			if _, err = r.Read(tmp); err != nil {
+				close(done)
+				return
+			}
 			if len(prefix) > 0 {
 				buffer.WriteString(prefix)
 			}
@@ -112,71 +115,116 @@ func runFuckRandom(wg *sync.WaitGroup, code, prefix, suffix, hash string, pos, p
 	}
 }
 
-func main() {
+func usageHandler(c *gin.Context) {
+	u := c.Request.URL.Hostname()
+	c.String(http.StatusOK, `Usage:
+request: %s/hashpow?c=[code]&h=[hash type]&pf=[prefix string]&sf=[suffix sstring]&p=[pos]
+like: %s/hashpow?c=abcdef&h=md5
+like: %s/hashpow?c=abcdef&h=md5&pf=v&sf=k&p=6`, u)
+}
+
+// Resp - Response Struct
+type Resp struct {
+	Msg  string `json:"msg"`
+	Code int    `json:"code"`
+	Data struct {
+		Code   string `json:"code"`
+		Hash   string `json:"hash"`
+		Pos    int    `json:"pos"`
+		Prefix string `json:"prefix"`
+		Suffix string `json:"suffix"`
+		Result string `json:"result"`
+	}
+}
+
+func hashpowHandler(c *gin.Context) {
+	done = make(chan struct{})
+	result = ""
+	code = c.Query("c")
+	prefix = c.Query("pf")
+	suffix = c.Query("sf")
+	hash = c.Query("h")
+	_pos := c.Query("p")
+	if len(code) == 0 {
+		c.JSON(http.StatusInternalServerError, &Resp{Code: 1, Msg: "param code is empty"})
+		return
+	}
+	if len(hash) == 0 {
+		c.JSON(http.StatusInternalServerError, &Resp{Code: 1, Msg: "param hash is empty"})
+		return
+	}
+	pos, err = strconv.Atoi(_pos)
+	if err != nil {
+		pos = 0
+	}
+	posend := len(code) + pos
+	wg.Add(16)
+	for i := 0; i < 16; i++ {
+		go doRandom(&wg, code, prefix, suffix, hash, pos, posend)
+	}
+	go func() {
+		time.Sleep(10 * time.Second)
+		select {
+		case <-done:
+			return
+		default:
+			fmt.Println("[-] Timeout")
+			close(done)
+			return
+		}
+	}()
+	wg.Wait()
+	if len(result) > 0 {
+		if len(c.Query("r")) > 0 {
+			c.String(http.StatusOK, result)
+			return
+		}
+		resp := &Resp{Code: 0, Msg: "success"}
+		resp.Data.Code = code
+		resp.Data.Hash = hash
+		resp.Data.Pos = pos
+		resp.Data.Prefix = prefix
+		resp.Data.Suffix = suffix
+		resp.Data.Result = result
+		c.JSON(http.StatusOK, resp)
+	} else {
+		c.JSON(http.StatusInternalServerError, &Resp{
+			Code: 1,
+			Msg:  fmt.Sprintf("Oops, something error [%s]", result),
+		})
+	}
+}
+
+func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	flag.StringVar(&code, "c", "", "code")
+	done = make(chan struct{})
+	result = ""
+
+	flag.StringVar(&code, "c", "", "part of hash code")
 	flag.StringVar(&prefix, "pf", "", "text prefix")
 	flag.StringVar(&suffix, "sf", "", "text suffix")
-	flag.StringVar(&hash, "h", "", "hash type : md5 sha1")
+	flag.StringVar(&hash, "t", "", "hash type : md5 sha1")
 	flag.IntVar(&pos, "p", 0, "starting position of hash")
-	flag.BoolVar(&server, "s", false, "Run as a web server provide api")
+	flag.BoolVar(&server, "s", false, "Run as a web server to provide api")
 	flag.IntVar(&port, "port", 3000, "Web server port")
 	flag.Parse()
 
+	if len(code) == 0 || len(hash) == 0 {
+		fmt.Printf("%s %s - %s By %s\n", appName, version, desc, author)
+		flag.Usage()
+	}
+
+}
+
+func main() {
 	if server {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DisableConsoleColor()
 		r := gin.Default()
-		r.GET("/hashpow", func(c *gin.Context) {
-			done = make(chan struct{})
-			var err error
-			result = ""
-			code = c.Query("c")
-			prefix = c.Query("pf")
-			suffix = c.Query("sf")
-			hash = c.Query("h")
-			_pos := c.Query("p")
-			pos, err = strconv.Atoi(_pos)
-			if err != nil {
-				pos = 0
-			}
-			if len(code) > 0 {
-				posend := len(code) + pos
-				wg.Add(16)
-				for i := 0; i < 16; i++ {
-					go runFuckRandom(&wg, code, prefix, suffix, hash, pos, posend)
-				}
-				go func() {
-					time.Sleep(10 * time.Second)
-					select {
-					case <-done:
-						return
-					default:
-						fmt.Println("[-] Timeout")
-						close(done)
-						return
-					}
-				}()
-				wg.Wait()
-			}
-			if len(result) > 0 {
-				c.JSON(200, gin.H{
-					"code":   code,
-					"hash":   hash,
-					"pos":    pos,
-					"prefix": prefix,
-					"suffix": suffix,
-					"result": result,
-					"msg":    "success",
-				})
-			} else {
-				c.JSON(500, gin.H{"msg": "Oops, something error"})
-			}
-
-		})
+		r.GET("/", usageHandler)
+		r.GET("/hashpow", hashpowHandler)
 		fmt.Printf("WEB Server Listen on http://0.0.0.0:%d\n", port)
-		// r.Run(fmt.Sprintf(":%d", port))
 		s := &http.Server{
 			Addr:           fmt.Sprintf(":%d", port),
 			Handler:        r,
@@ -184,20 +232,14 @@ func main() {
 			WriteTimeout:   10 * time.Second,
 			MaxHeaderBytes: 1 << 20,
 		}
-		s.ListenAndServe()
-	} else if len(code) == 0 {
-		fmt.Printf(`
-[*]***********************************************[*]
-[*] %s %s - %s - By %s [*]
-[*]***********************************************[*]
-
-`, AppName, Version, Desc, Author)
-		return
+		if err = s.ListenAndServe(); err != nil {
+			fmt.Println(err.Error())
+		}
 	} else {
 		posend := len(code) + pos
 		wg.Add(16)
 		for i := 0; i < 16; i++ {
-			go runFuckRandom(&wg, code, prefix, suffix, hash, pos, posend)
+			go doRandom(&wg, code, prefix, suffix, hash, pos, posend)
 		}
 		wg.Wait()
 	}
