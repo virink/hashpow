@@ -30,7 +30,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	suffix := q.Get("sf")
 	hash := q.Get("h")
 	_pos := q.Get("p")
-	raw := c.Query("r")
+	raw := q.Get("r")
 	if len(code) == 0 || len(hash) == 0 {
 		fmt.Fprintf(w, `Usage:
 request: /?c=[code]&h=[hash type]&pf=[prefix string]&sf=[suffix sstring]&p=[pos]&r=[true]
