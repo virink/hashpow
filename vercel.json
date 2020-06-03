@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "build": {
+        "env": {
+            "GO_BUILD_FLAGS": "-ldflags '-s -w'"
+        }
+    },
+    "routes": [{
+        "src": "/(.*)",
+        "headers": {
+            "author": "Virink"
+        },
+        "dest": "/api/hashpow"
+    }]
+}
