@@ -8,24 +8,25 @@ Fuck the hash proof of work for ctfer
 ./hashpow --help
 
 Usage of ./build/hashpow:
-  -c string
+  -c string (**require**)
         code
-  -h string
+  -t string (**require**)
         hash type : md5 sha1
   -p int
         starting position of hash
   -pf string
         text prefix
+  -sf string
+        text suffix
+
   -port int
         Web server port (default 3000)
   -s    Run as a web server provide api
-  -sf string
-        text suffix
 ```
 
 ## Cli
 
-`./hashpow -c code -h [md5,sha1] [-p pos -pf prefix -sf suffix]`
+`./hashpow -c code -t [md5,sha1] [-p pos -pf prefix -sf suffix]`
 
 ## Server
 
