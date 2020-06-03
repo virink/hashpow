@@ -2,6 +2,11 @@
 
 Fuck the hash proof of work for ctfer
 
+## Online
+
+https://hashpow.now.sh/
+https://hashpow.now.sh/?c=66666&h=md5
+
 ## Usage
 
 ```
@@ -40,8 +45,8 @@ Request
 
 ```
 /hashpow?c=code
-/hashpow?c=code&p=pos&h=hash&pf=prefix&sf=suffix
-/hashpow?c=aaaaaa&h=md5
+/hashpow?c=code&p=pos&t=hash&pf=prefix&sf=suffix
+/hashpow?c=aaaaaa&t=md5
 ```
 
 Response

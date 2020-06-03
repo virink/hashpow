@@ -27,12 +27,12 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	code := q.Get("c")
 	prefix := q.Get("pf")
 	suffix := q.Get("sf")
-	hash := q.Get("h")
+	hash := q.Get("t")
 	_pos := q.Get("p")
 	raw := q.Get("r")
 	if len(code) == 0 || len(hash) == 0 {
 		fmt.Fprintf(w, `Usage:
-request: /?c=[code]&h=[hash type]&pf=[prefix string]&sf=[suffix sstring]&p=[pos]&r=[true]
+request: /?c=[code]&t=[hash type]&pf=[prefix string]&sf=[suffix sstring]&p=[pos]&r=[true]
 Params:
 - c [string] Code (**require**)
 - t [string] hash Type : md5 sha1 (**require**)

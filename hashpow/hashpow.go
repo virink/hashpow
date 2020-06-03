@@ -117,7 +117,7 @@ func DoRandom(wg *sync.WaitGroup, code, prefix, suffix, hash string, pos, posend
 func usageHandler(c *gin.Context) {
 	u := c.Request.URL.Hostname()
 	c.String(http.StatusOK, `Usage:
-request: %s/hashpow?c=[code]&h=[hash type]&pf=[prefix string]&sf=[suffix sstring]&p=[pos]&r=[true]
+request: %s/hashpow?c=[code]&t=[hash type]&pf=[prefix string]&sf=[suffix sstring]&p=[pos]&r=[true]
 Params:
 - c [string] Code (**require**)
 - t [string] hash Type : md5 sha1 (**require**)
@@ -186,7 +186,7 @@ func hashpowHandler(c *gin.Context) {
 	code = c.Query("c")
 	prefix = c.Query("pf")
 	suffix = c.Query("sf")
-	hash = c.Query("h")
+	hash = c.Query("t")
 	_pos := c.Query("p")
 	raw := c.Query("r")
 	if len(code) == 0 {
