@@ -23,7 +23,6 @@ func toJSON(r *Resp) string {
 
 // Handler -
 func Handler(w http.ResponseWriter, r *http.Request) {
-	wg := sync.WaitGroup{}
 	q := r.URL.Query()
 	code := q.Get("c")
 	prefix := q.Get("pf")
@@ -51,7 +50,7 @@ eg: /?c=abcdef&h=md5
 	}
 	posend := len(code) + pos
 	wg := sync.WaitGroup{}
-	resp := Running(&wg, code, prefix, suffix, hash, pos, posend)
+	resp := hashpow.Running(&wg, code, prefix, suffix, hash, pos, posend)
 	if len(raw) > 0 {
 		fmt.Fprintf(w, resp.Data.Result)
 		return
@@ -61,5 +60,5 @@ eg: /?c=abcdef&h=md5
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	fmt.Fprintf(w, toJSON(resp))
+	fmt.Fprintf(w, toJSON(&resp))
 }
