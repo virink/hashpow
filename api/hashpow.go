@@ -40,8 +40,8 @@ Params:
 - pf [string] text Prefix
 - sf [string] text Suffix
 - r [boolean] Raw resopnse
-eg: /?c=abcdef&h=md5
-    /?c=abcdef&h=md5&pf=v&sf=k&p=6`)
+eg: /?c=abcdef&t=md5
+    /?c=abcdef&t=md5&pf=v&sf=k&p=6`)
 		return
 	}
 	pos, err := strconv.Atoi(_pos)
